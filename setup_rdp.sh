@@ -43,8 +43,9 @@ listening() { ss -ltn | grep -q ":$1 "; }
 fix_tmp_dirs() {
   local d fixed=0
   for d in /tmp/.X11-unix /tmp/.ICE-unix; do
-    [[ -d $d ]] || continue
-    if [[ $(stat -c %U "$d") != root ]]; then
+    if [[ ! -d $d ]]; then
+      mkdir -m 1777 "$d"   # create it as root before gdm does
+    elif [[ $(stat -c %U "$d") != root ]]; then
       chown root:root "$d"; chmod 1777 "$d"; fixed=1
     fi
   done
@@ -127,6 +128,7 @@ if [[ -f $FLAG ]]; then
   echo "  which is provided by Canonical Ltd."
   echo
   ask_yes "  Accept?" || die "Not accepted. Nothing was changed."
+  fix_tmp_dirs || true   # make sure the X11 folders belong to root before gdm starts
   rm -f "$FLAG"
   ok "terms accepted"
   info "waiting for the login screen (gdm) to start..."
@@ -135,6 +137,7 @@ if [[ -f $FLAG ]]; then
 else
   ok "terms already accepted"
 fi
+sleep 3   # let the login screen create its sockets, then check again
 if fix_tmp_dirs; then
   ok "fixed owner of /tmp/.X11-unix (was not root), restarting gdm"
   systemctl restart gdm; sleep 5
