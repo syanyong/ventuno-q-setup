@@ -3,6 +3,7 @@
 #
 #   sudo ./setup_rdp.sh            ask the mode, show the plan, confirm, then set up
 #   sudo ./setup_rdp.sh --status   show the current state only (changes nothing)
+#   sudo ./setup_rdp.sh --fix      fix a black screen after RDP login
 #   sudo ./setup_rdp.sh --disable  turn RDP off (both modes)
 #
 # Mode 1  No HDMI : "Remote Login". The laptop gets its own Ubuntu login
@@ -36,6 +37,20 @@ as_user() {
 
 listening() { ss -ltn | grep -q ":$1 "; }
 
+# /tmp/.X11-unix must belong to root. On a fresh board it can end up owned
+# by gdm, and then the desktop crashes right after login over RDP
+# (gnome-shell: "Wrong ownership for directory /tmp/.X11-unix").
+fix_tmp_dirs() {
+  local d fixed=0
+  for d in /tmp/.X11-unix /tmp/.ICE-unix; do
+    [[ -d $d ]] || continue
+    if [[ $(stat -c %U "$d") != root ]]; then
+      chown root:root "$d"; chmod 1777 "$d"; fixed=1
+    fi
+  done
+  return $((1 - fixed))   # 0 = something was fixed
+}
+
 show_status() {
   . /etc/os-release
   echo "Ubuntu         : $PRETTY_NAME"
@@ -45,17 +60,20 @@ show_status() {
   echo "HDMI mode      : $(as_user grdctl status 2>/dev/null | awk '/Status:/{print $2; exit}')"
   echo "Port 3389      : $(listening 3389 && echo listening || echo closed)"
   echo "Port 3390      : $(listening 3390 && echo listening || echo closed)"
+  echo "/tmp/.X11-unix : owner $(stat -c %U /tmp/.X11-unix 2>/dev/null || echo missing) (must be root)"
   echo "Board IP       : $(hostname -I)"
 }
 
 case "${1:-}" in
   --status)  show_status; exit 0 ;;
+  --fix)     if fix_tmp_dirs; then systemctl restart gdm; ok "fixed /tmp/.X11-unix owner, gdm restarted"; else ok "nothing to fix"; fi
+             exit 0 ;;
   --disable) grdctl --system rdp disable 2>/dev/null || true
              as_user grdctl rdp disable 2>/dev/null || true
              systemctl restart gnome-remote-desktop || true
              ok "RDP disabled"; exit 0 ;;
   "")        ;;
-  *)         die "unknown option: $1 (use --status or --disable)" ;;
+  *)         die "unknown option: $1 (use --status, --fix or --disable)" ;;
 esac
 
 make_cert() {   # make_cert <dir> <owner>
@@ -116,6 +134,10 @@ if [[ -f $FLAG ]]; then
   systemctl is-active --quiet gdm || { systemctl restart gdm; sleep 5; }
 else
   ok "terms already accepted"
+fi
+if fix_tmp_dirs; then
+  ok "fixed owner of /tmp/.X11-unix (was not root), restarting gdm"
+  systemctl restart gdm; sleep 5
 fi
 if systemctl is-active --quiet gdm; then ok "gdm is running"; else warn "gdm is not running: check 'systemctl status gdm'"; fi
 

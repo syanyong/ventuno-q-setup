@@ -47,6 +47,7 @@ sudo ./setup_rdp.sh
 
 ```bash
 sudo ./setup_rdp.sh --status    # ดูสถานะอย่างเดียว ไม่แก้อะไร
+sudo ./setup_rdp.sh --fix       # แก้จอดำหลัง login ผ่าน RDP
 sudo ./setup_rdp.sh --disable   # ปิด RDP ทั้งสองโหมด
 ```
 
@@ -55,7 +56,9 @@ sudo ./setup_rdp.sh --disable   # ปิด RDP ทั้งสองโหม�
 | อาการ | ลองทำ |
 |---|---|
 | ต่อไม่ติด | เช็กว่าบอร์ดกับโน้ตบุ๊กอยู่ network เดียวกัน และ `--status` ต้องขึ้น `listening` |
-| ต่อได้แต่จอดำ | เช็กว่า `systemctl status gdm` เป็น `active` |
+| login แล้วจอดำหรือเด้งกลับหน้า login | รัน `sudo ./setup_rdp.sh --fix` (แก้เจ้าของ `/tmp/.X11-unix` ให้เป็น root) หรือ reboot บอร์ด |
+| ต่อได้แต่จอดำตั้งแต่แรก | เช็กว่า `systemctl status gdm` เป็น `active` |
+| ขึ้น "This connection is insecure" | เป็นเรื่องปกติ กด Continue ได้เลย หรือเซฟไฟล์ .rdp แล้วเพิ่มบรรทัด `use redirection server name:i:1` |
 | โหมด 2 บอกว่าไม่มี desktop session | ต้อง login บนจอก่อน หรือใช้โหมด 1 แทน |
 | ใส่รหัส RDP ไม่ผ่าน | รัน `sudo ./setup_rdp.sh` ใหม่แล้วตั้งรหัสใหม่ |
 
