@@ -2,6 +2,14 @@
 
 สคริปต์เตรียมบอร์ด Arduino VENTUNO Q สำหรับ workshop
 
+## check_board.sh: เช็กว่าบอร์ดพร้อมสอนไหม
+
+```bash
+./check_board.sh        # ไม่ต้องใช้ sudo ไม่แก้อะไรบนบอร์ด
+```
+
+เช็กทีละ Part: arduino:zephyr, Remote Desktop, กล้อง, ROS 2, กลุ่ม arduino-router, โมเดล AI, llama.cpp และพื้นที่ disk ข้อที่ขาดจะบอกคำสั่งที่ต้องรันต่อ
+
 ## setup_rdp.sh: เปิด Remote Desktop
 
 เปิด Remote Desktop (RDP) ด้วยสคริปต์เดียว ใช้ได้ทั้งตอนที่ไม่ได้ต่อจอและตอนที่ต่อจอ HDMI อยู่
