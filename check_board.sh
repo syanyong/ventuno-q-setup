@@ -34,10 +34,18 @@ id -nG | grep -qw arduino-router && ok "user in group arduino-router" \
   || { bad "App ros2-matrix-led-bridge missing"; hint "cd ~/ArduinoApps && git clone https://github.com/syanyong/ros2-matrix-led-bridge.git"; }
 
 echo; echo "-- Part 3 + 5: models"
-models=$(arduino-app-cli model list 2>/dev/null)
+status_json=$(arduino-app-cli model list --format json 2>/dev/null)
+model_status() {   # prints installed / downloading / not-installed
+  echo "$status_json" | python3 -c '
+import json, sys
+d = json.load(sys.stdin)
+m = d.get("models") or next(v for v in d.values() if isinstance(v, list))
+print(next((x.get("Status") for x in m if x.get("ID") == sys.argv[1]), "unknown"))' "$1"
+}
 for m in yolox-qnn-object-detection face-detection-qnn genie:qwen3_4b_instruct_2507 llamacpp:Qwen3.5-0.8B-Q4_0 genie:qwen3_vl_4b_instruct; do
-  if echo "$models" | grep -E "^$m\s" | grep -q "✓"; then ok "model $m"
-  else bad "model $m not downloaded"; hint "arduino-app-cli model install $m"; fi
+  st=$(model_status "$m")
+  if [[ $st == installed ]]; then ok "model $m"
+  else bad "model $m: $st"; hint "arduino-app-cli model install $m"; fi
 done
 
 echo; echo "-- Part 5: llama.cpp (Workshop 5)"
