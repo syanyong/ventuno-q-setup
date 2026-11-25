@@ -10,6 +10,31 @@
 
 เช็กทีละ Part: arduino:zephyr, Remote Desktop, กล้อง, ROS 2, กลุ่ม arduino-router, โมเดล AI, llama.cpp และพื้นที่ disk ข้อที่ขาดจะบอกคำสั่งที่ต้องรันต่อ
 
+## copy_models.sh: ก็อปโมเดลไปบอร์ดอื่นโดยไม่ต้องใช้เน็ต
+
+ก็อปโมเดลที่ลงผ่าน arduino-app-cli (`genie:` และ `llamacpp:`) จากบอร์ดที่โหลดไว้แล้วไปบอร์ดอื่น ใช้ตอนเน็ตหลุดหรือเน็ตช้าในห้องเรียน ไม่ต้องใช้ sudo
+
+```bash
+./copy_models.sh list                              # ดูว่ามีโมเดลอะไรให้ก็อป
+
+# วิธี A: ส่งผ่าน LAN (บอร์ดอยู่วงเดียวกัน ไม่ต้องมีเน็ต)
+./copy_models.sh send 10.26.15.160                 # ส่งทุกโมเดล
+./copy_models.sh send 10.26.15.160 genie:qwen3_4b_instruct_2507
+
+# วิธี B: ผ่าน flash drive (ฟอร์แมต exFAT)
+udisksctl mount -b /dev/sda1                       # บอร์ดต้นทาง
+./copy_models.sh export /media/arduino/<drive>/models
+udisksctl unmount -b /dev/sda1
+# เสียบที่บอร์ดปลายทาง
+udisksctl mount -b /dev/sda1
+./copy_models.sh import /media/arduino/<drive>/models
+```
+
+- โมเดล built-in (YoloX, Face) ติดมากับบอร์ดอยู่แล้ว ไม่ต้องก็อป
+- `models.ini` ของ llamacpp จะเพิ่มเฉพาะบรรทัดที่ยังไม่มี ไม่เขียนทับ
+- `send` จะถามรหัสผ่านของบอร์ดปลายทาง (ใช้ ssh)
+- เสร็จแล้วสคริปต์จะแสดง Status ให้ดูว่าเป็น `installed`
+
 ## setup_rdp.sh: เปิด Remote Desktop
 
 เปิด Remote Desktop (RDP) ด้วยสคริปต์เดียว ใช้ได้ทั้งตอนที่ไม่ได้ต่อจอและตอนที่ต่อจอ HDMI อยู่
